@@ -108,7 +108,6 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error: `文件预扫描失败：${err instanceof Error ? err.message : String(err)}`,
-          detail: err instanceof Error ? err.stack : undefined,
         },
         { status: 400 }
       );

@@ -35,11 +35,13 @@ async function truncatePipelineTables(): Promise<void> {
 }
 
 async function seedBaseData(): Promise<void> {
-  await db.delete(skuMaster);
-  await db.insert(skuMaster).values([
-    { skuCode: 'SKU_00001', name: '商品1', spec: '1kg', unit: '件' },
-    { skuCode: 'SKU_00002', name: '商品2', spec: '2kg', unit: '件' },
-  ]);
+  await db
+    .insert(skuMaster)
+    .values([
+      { skuCode: 'SKU_00001', name: '商品1', spec: '1kg', unit: '件' },
+      { skuCode: 'SKU_00002', name: '商品2', spec: '2kg', unit: '件' },
+    ])
+    .onConflictDoNothing();
 
   await db.delete(parseRules).where(drizzleSql`name = '集成测试规则'`);
   const [rule] = await db

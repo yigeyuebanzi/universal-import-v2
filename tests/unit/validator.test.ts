@@ -25,8 +25,10 @@ async function seedTask(): Promise<{ id: string; traceId: string; degraded: bool
 describe('validateBatch', () => {
   beforeEach(async () => {
     await db.execute(drizzleSql`TRUNCATE import_task_errors, waybills, import_task_batches, import_tasks, event_outbox, trace_events, batch_performance_log CASCADE`);
-    await db.delete(skuMaster);
-    await db.insert(skuMaster).values({ skuCode: 'SKU_00001', name: '商品1', spec: '1kg', unit: '件' });
+    await db
+      .insert(skuMaster)
+      .values({ skuCode: 'SKU_00001', name: '商品1', spec: '1kg', unit: '件' })
+      .onConflictDoNothing();
   });
 
   it('flags required, phone, quantity, SKU and duplicate errors', async () => {
