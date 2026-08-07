@@ -168,6 +168,23 @@ powershell -ExecutionPolicy Bypass -File scripts/deploy-vercel.ps1 -Prod
 - 字段语义发生重大变化时递增 `schema_version`，并保留旧版本消费者兼容期；
 - 事件契约见 [docs/API.md](docs/API.md) 与 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
 
+## 交付物清单（对应考题第十三章）
+
+| # | 考题要求 | 位置 |
+|---|---|---|
+| 1 | 在线地址（Vercel） | https://universal-import-v4-brown.vercel.app |
+| 2 | 源码仓库 | GitHub 分支：https://github.com/yigeyuebanzi/universal-import-v2/tree/v4-async-event-driven ；本地 bundle：`../universal-import-v4.bundle` |
+| 3 | 压测数据脚本（20,000 SKU） | `scripts/seed-data.ts`（`npm run seed`） |
+| 4 | 10,000 行压测 Excel | `test-data/10000-orders.xlsx` |
+| 5 | 压测报告 | `docs/LOAD_TEST_REPORT.md`（含本地与线上实测），原始 JSON 在 `reports/` |
+| 6 | 架构设计文档 | `docs/ARCHITECTURE.md` |
+| 7 | 《重构假设说明》 | `docs/REFACTORING_ASSUMPTIONS.md`（12 项要求 + 8 道反思题） |
+| 8 | 接口文档 | `docs/API.md` |
+| 9 | README | 本文档 |
+| 10 | 演示访问说明 | 本文档「快速开始/页面入口」+ 线上地址（首次使用需输入 `IMPORT_API_KEY`） |
+
+辅助交付物：监控/任务/Trace 截图在 `docs/screenshots/`，部署脚本 `scripts/deploy-vercel.ps1`，线上验收脚本 `scripts/verify-online.ps1`，数据库迁移 SQL 在 `drizzle/`。
+
 ## 数据清理与归档
 
 - `npm run seed:clean`：清理压测任务、waybills、错误、性能日志、Trace、Outbox 与 SKU 主数据，再重新灌数；
