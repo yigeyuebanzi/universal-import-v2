@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
+import { eventOutbox } from '@/lib/db/schema';
 import { processBatchJob } from '@/lib/import/worker';
 import type { BatchJobPayload } from '@/lib/queue';
 
@@ -57,6 +58,15 @@ export async function GET(request: Request) {
     };
     try {
       await processBatchJob(payload);
+      await db
+        .update(eventOutbox)
+        .set({ status: 'sent', sentAt: new Date(), lastError: null })
+        .where(
+          and(
+            eq(eventOutbox.aggregateId, row.task_id),
+            sql`${eventOutbox.payload}->>'unitId' = ${row.unit_id}`
+          )
+        );
       processed++;
     } catch (err) {
       failed++;

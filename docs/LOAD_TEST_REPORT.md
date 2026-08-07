@@ -1,5 +1,14 @@
 # 压测报告
 
+## 线上验收（Vercel 生产环境，2026-08-07）
+
+- 线上地址：https://universal-import-v4-brown.vercel.app
+- 上传接口服务端耗时：663ms（P95 目标 ≤ 1s ✅）
+- 10,000 行任务自动处理完成：processed 10,000 / success 9,920 / failed 80 / 批次 10/10 ✅
+- 线上错误分布与本地一致：E001×30、E003×20、E004×20、E005×10
+- 线上监控聚合、错误分页、Trace 时间线接口均验证通过
+- 架构：Vercel + Neon PostgreSQL + Upstash Redis（`QUEUE_DRIVER=db` 拉取式处理，上传后自动踢单）
+
 ## 测试时间
 
 2026-08-07 08:44（Asia/Shanghai），脚本输出 `reports/load-test-report-1786063494431.json`。

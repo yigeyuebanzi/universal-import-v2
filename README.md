@@ -95,6 +95,8 @@ npm run load-test
 
 详细说明见 [docs/LOAD_TEST_REPORT.md](docs/LOAD_TEST_REPORT.md)。
 
+线上生产地址：https://universal-import-v4-brown.vercel.app （Vercel + Neon + Upstash Redis，已跑通 10,000 行线上验收）。
+
 ## 自动化测试
 
 ```bash
@@ -131,7 +133,7 @@ npm test
 
 - **Web/API**：Vercel（Next.js 构建），环境变量走 Neon Postgres、Upstash Redis、Vercel Blob
 - **Worker + Dispatcher + Sweeper**：Railway / Render / Fly.io 常驻进程运行 `npm run worker`
-- **Cron 兜底 / Serverless Worker**：`vercel.json` 已配置 `/api/cron/dispatch`（每分钟）、`/api/cron/process`（每分钟）和 `/api/cron/sweep`（每 5 分钟）；`QUEUE_DRIVER=db` + `FILE_STORAGE=db` 时，上传接口会在响应后自动“踢”一次 `/api/cron/process`，不依赖常驻 Worker 即可完整跑通导入链路
+- **Cron 兜底 / Serverless Worker**：`vercel.json` 已配置 `/api/cron/process` 与 `/api/cron/sweep`（Hobby 套餐为每日兜底）；`QUEUE_DRIVER=db` + `FILE_STORAGE=db` 时，上传接口会在响应后自动“踢”一次 `/api/cron/process`，不依赖常驻 Worker 即可完整跑通导入链路。需要更高频率可升级 Pro 或部署常驻 Worker
 
 ```bash
 vercel deploy --prod
