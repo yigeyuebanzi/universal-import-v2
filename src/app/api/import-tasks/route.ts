@@ -125,7 +125,10 @@ export async function POST(request: Request) {
     // starts processing immediately without waiting for the next cron tick.
     try {
       after(() => {
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+        const baseUrl =
+          process.env.VERCEL_PROJECT_PRODUCTION_URL
+            ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+            : process.env.NEXT_PUBLIC_APP_URL;
         const cronSecret = process.env.CRON_SECRET;
         if (!baseUrl) return;
         fetch(`${baseUrl}/api/cron/process`, {
