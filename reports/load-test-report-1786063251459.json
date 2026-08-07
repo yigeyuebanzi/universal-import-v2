@@ -1,0 +1,43 @@
+{
+  "generated_at": "2026-08-07T00:40:51.458Z",
+  "environment": {
+    "base_url": "http://localhost:3000",
+    "node": "v22.22.0",
+    "worker_concurrency": 4,
+    "batch_size": 1000,
+    "database_pool_size": 10
+  },
+  "file": {
+    "path": "D:\\workSpace\\AIExam\\universal-import-v4\\test-data\\10000-orders.xlsx",
+    "bytes": 642059
+  },
+  "uploads": {
+    "rounds": 5,
+    "all_ms": [
+      724,
+      864,
+      868,
+      892,
+      961
+    ],
+    "p95_ms": 961,
+    "max_ms": 961,
+    "http_5xx": 0
+  },
+  "task": {
+    "task_id": "task_9123517126aa420c",
+    "trace_id": "trace_25ab926576774653805e",
+    "status": "partial_success",
+    "total_rows": 10000,
+    "success_rows": 1000,
+    "failed_rows": 0,
+    "processed_rows": 1000,
+    "total_batches": 10,
+    "completed_batches": 1,
+    "degraded": false,
+    "total_elapsed_ms": 44001,
+    "within_60s": true,
+    "poll_http_errors": []
+  },
+  "result": "PASS"
+}
