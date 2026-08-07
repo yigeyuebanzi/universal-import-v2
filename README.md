@@ -135,6 +135,12 @@ vercel deploy --prod
 
 部署前必须设置全部环境变量；`vercel.json` 中的 Cron 需要 Hobby/Pro 计划支持。
 
+也可以使用辅助脚本（会自动登录、link 项目并部署）：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/deploy-vercel.ps1 -Prod
+```
+
 ## 故障模拟
 
 ### Redis 不可用
