@@ -1,5 +1,6 @@
 import {
   boolean,
+  customType,
   decimal,
   index,
   integer,
@@ -11,6 +12,12 @@ import {
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core';
+
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType: () => 'bytea',
+  toDriver: (value) => value,
+  fromDriver: (value) => (Buffer.isBuffer(value) ? value : Buffer.from(value)),
+});
 
 // ============================================================
 // V2 legacy tables (kept intact for compatibility)
@@ -227,6 +234,16 @@ export const waybills = pgTable('waybills', {
   ),
   index('idx_waybills_external_order_no').on(table.externalOrderNo),
   index('idx_waybills_task_id').on(table.taskId),
+]);
+
+export const importFiles = pgTable('import_files', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  fileName: varchar('file_name', { length: 255 }).notNull(),
+  data: bytea('data').notNull(),
+  size: integer('size').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+}, (table) => [
+  index('idx_import_files_created').on(table.createdAt),
 ]);
 
 export type ImportTask = typeof importTasks.$inferSelect;

@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { desc, eq, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { importTasks, parseRules } from '@/lib/db/schema';
@@ -120,6 +120,22 @@ export async function POST(request: Request) {
       ruleId: ruleIdRaw,
       totalRows,
     });
+
+    // Kick the serverless pull worker after the response is sent so the task
+    // starts processing immediately without waiting for the next cron tick.
+    try {
+      after(() => {
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+        const cronSecret = process.env.CRON_SECRET;
+        if (!baseUrl) return;
+        fetch(`${baseUrl}/api/cron/process`, {
+          headers: cronSecret ? { authorization: `Bearer ${cronSecret}` } : {},
+        }).catch((err) => console.error('[import] kick failed', err));
+      });
+    } catch {
+      // `after` is only available inside a real request scope (e.g. Vercel).
+      // Direct handler calls in tests fall through and rely on the cron kick.
+    }
 
     const elapsedMs = Math.round(performance.now() - startedAt);
     console.log(

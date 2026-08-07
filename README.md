@@ -111,10 +111,14 @@ npm test
 | `REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD` / `REDIS_TLS` | Redis 连接（BullMQ） |
 | `UPLOAD_DIR` | 本地文件存储目录（默认 `./data/uploads`） |
 | `BLOB_READ_WRITE_TOKEN` | 设置后使用 Vercel Blob 保存上传文件 |
+| `FILE_STORAGE` | `local`（默认）/ `db`（文件入库，Vercel 无持久磁盘时使用） |
 | `IMPORT_API_KEY` | 可选；设置后所有导入/监控/Trace API 需 `x-api-key` |
 | `CRON_SECRET` | Vercel Cron 鉴权 |
 | `BATCH_SIZE` | 处理单元大小，默认 1000 |
 | `WORKER_CONCURRENCY` | 单 Worker 并发，默认 4 |
+| `QUEUE_DRIVER` | `redis`（默认，BullMQ 常驻 Worker）/ `db`（Vercel Cron 拉取处理） |
+| `CRON_PROCESS_BATCHES` | 每次 Cron/上传踢单最多处理的批次数，默认 4 |
+| `REDIS_URL` | 设置后且未设置 `REDIS_HOST` 时自动解析 Redis 连接 |
 | `SKU_CHECK_TIMEOUT_MS` | SKU 校验超时阈值，默认 3000，超时触发降级 |
 | `STALE_BATCH_MINUTES` | 批次卡死判定阈值，默认 5 |
 | `BATCH_MAX_RETRIES` | 处理单元最大重试次数，默认 3 |
@@ -127,7 +131,7 @@ npm test
 
 - **Web/API**：Vercel（Next.js 构建），环境变量走 Neon Postgres、Upstash Redis、Vercel Blob
 - **Worker + Dispatcher + Sweeper**：Railway / Render / Fly.io 常驻进程运行 `npm run worker`
-- **Cron 兜底**：`vercel.json` 已配置 `/api/cron/dispatch`（每分钟）和 `/api/cron/sweep`（每 5 分钟），即使 Worker 不在线也能投递/恢复
+- **Cron 兜底 / Serverless Worker**：`vercel.json` 已配置 `/api/cron/dispatch`（每分钟）、`/api/cron/process`（每分钟）和 `/api/cron/sweep`（每 5 分钟）；`QUEUE_DRIVER=db` + `FILE_STORAGE=db` 时，上传接口会在响应后自动“踢”一次 `/api/cron/process`，不依赖常驻 Worker 即可完整跑通导入链路
 
 ```bash
 vercel deploy --prod

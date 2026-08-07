@@ -1,3 +1,7 @@
+import { randomUUID } from 'node:crypto';
+import { tmpdir } from 'node:os';
+import { writeFile } from 'node:fs/promises';
+import path from 'node:path';
 import type { ParseRule, RawFileData, RawSheet } from '@/lib/rules/types';
 import { matchesPattern } from '@/lib/rules/engine';
 import { parseExcel } from '@/lib/parsers/excel';
@@ -39,18 +43,32 @@ function isNonEmptyRow(row: (string | number | null)[]): boolean {
   return row.some((v) => v !== null && String(v).trim() !== '');
 }
 
+/**
+ * DB-backed uploads (db://) cannot be streamed from a filesystem path, so the
+ * bytes are materialized to a temporary file first. Vercel cron/worker
+ * invocations are ephemeral and the OS temp dir is cleaned up by the platform.
+ */
+async function ensureLocalFile(ref: string): Promise<string> {
+  if (!ref.startsWith('db://')) return ref;
+  const buffer = await readUpload({ ref });
+  const tmpPath = path.join(tmpdir(), `import-${randomUUID()}.xlsx`);
+  await writeFile(tmpPath, buffer);
+  return tmpPath;
+}
+
 async function countExcelRows(ref: string, rule: ParseRule): Promise<number> {
+  const localRef = await ensureLocalFile(ref);
   const region = rule.dataRegion ?? {};
   const headerRow = region.headerRow ?? 1;
   const dataStart = region.dataStartRow ?? headerRow + 1;
-  const sheets = await getXlsxSheets(ref);
+  const sheets = await getXlsxSheets(localRef);
   const target = sheets.find((s) => selectTargetSheet(rule, s.name, s.index));
   if (!target) return 0;
-  const sharedStrings = await loadSharedStrings(ref);
+  const sharedStrings = await loadSharedStrings(localRef);
   let total = 0;
 
   await streamSheetRows(
-    ref,
+    localRef,
     target.path,
     (row, rowNumber) => {
       if (rowNumber < dataStart) return false;
@@ -67,7 +85,7 @@ async function countExcelRows(ref: string, rule: ParseRule): Promise<number> {
 }
 
 async function isXlsx(ref: string): Promise<boolean> {
-  const sheets = await getXlsxSheets(ref);
+  const sheets = await getXlsxSheets(await ensureLocalFile(ref));
   return sheets.length > 0;
 }
 
@@ -77,20 +95,21 @@ async function readXlsxBatch(
   startRow: number,
   endRow: number
 ): Promise<RawFileData> {
-  const sheets = await getXlsxSheets(ref);
+  const localRef = await ensureLocalFile(ref);
+  const sheets = await getXlsxSheets(localRef);
   const target = sheets.find((s) => selectTargetSheet(rule, s.name, s.index));
   if (!target) {
     return { type: 'excel', sheets: [{ name: 'Sheet1', data: [] }] };
   }
 
-  const sharedStrings = await loadSharedStrings(ref);
+  const sharedStrings = await loadSharedStrings(localRef);
   const dataStartRow = rule.dataRegion?.dataStartRow ?? (rule.dataRegion?.headerRow ?? 1) + 1;
   // startRow/endRow are data-row numbers; the file prefix must include the
   // header plus all data rows up to endRow.
   const fileEndRow = dataStartRow + endRow - 1;
   const rows: (string | number | null)[][] = [];
   await streamSheetRows(
-    ref,
+    localRef,
     target.path,
     (row) => {
       rows.push(row);

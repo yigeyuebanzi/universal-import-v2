@@ -5,6 +5,10 @@
       "schedule": "*/1 * * * *"
     },
     {
+      "path": "/api/cron/process",
+      "schedule": "*/1 * * * *"
+    },
+    {
       "path": "/api/cron/sweep",
       "schedule": "*/5 * * * *"
     }

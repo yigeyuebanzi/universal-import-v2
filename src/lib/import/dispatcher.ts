@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { eventOutbox } from '@/lib/db/schema';
 import { enqueueBatch, type BatchJobPayload } from '@/lib/queue';
 import { writeTrace } from '@/lib/trace';
+import { getQueueDriver } from '@/lib/config';
 
 type OutboxDbRow = {
   id: string;
@@ -49,6 +50,16 @@ export async function dispatchPendingOutbox(
   let dispatched = 0;
   for (const row of rows) {
     try {
+      if (getQueueDriver() === 'db') {
+        // Serverless pull mode: batches are claimed directly by /api/cron/process,
+        // so the outbox event only needs to be marked delivered.
+        await db
+          .update(eventOutbox)
+          .set({ status: 'sent', sentAt: new Date(), lastError: null })
+          .where(eq(eventOutbox.id, row.id));
+        dispatched++;
+        continue;
+      }
       await enqueue(row.payload as BatchJobPayload);
       await db
         .update(eventOutbox)

@@ -143,29 +143,36 @@ describe('async import pipeline (integration)', () => {
   });
 
   it('dispatcher enqueues outbox events and can re-dispatch recovered rows', async () => {
-    await makeTask();
-    const dispatched: BatchJobPayload[] = [];
-    await dispatchPendingOutbox(10, async (payload) => {
-      dispatched.push(payload);
-    });
+    const prev = process.env.QUEUE_DRIVER;
+    process.env.QUEUE_DRIVER = 'redis';
+    try {
+      await makeTask();
+      const dispatched: BatchJobPayload[] = [];
+      await dispatchPendingOutbox(10, async (payload) => {
+        dispatched.push(payload);
+      });
 
-    const outbox = await db.select().from(eventOutbox);
-    expect(outbox.length).toBe(1);
-    expect(outbox[0]!.status).toBe('sent');
-    expect(dispatched.length).toBe(1);
+      const outbox = await db.select().from(eventOutbox);
+      expect(outbox.length).toBe(1);
+      expect(outbox[0]!.status).toBe('sent');
+      expect(dispatched.length).toBe(1);
 
-    // Simulate a crash between enqueue and status update: dispatcher must retry.
-    await db
-      .update(eventOutbox)
-      .set({ status: 'pending', sentAt: null, nextRetryAt: new Date(Date.now() - 1000) })
-      .where(drizzleSql`id = ${outbox[0]!.id}`);
-    const dispatched2: BatchJobPayload[] = [];
-    await dispatchPendingOutbox(10, async (payload) => {
-      dispatched2.push(payload);
-    });
-    const after = await db.select().from(eventOutbox);
-    expect(after[0]!.status).toBe('sent');
-    expect(dispatched2.length).toBe(1);
+      // Simulate a crash between enqueue and status update: dispatcher must retry.
+      await db
+        .update(eventOutbox)
+        .set({ status: 'pending', sentAt: null, nextRetryAt: new Date(Date.now() - 1000) })
+        .where(drizzleSql`id = ${outbox[0]!.id}`);
+      const dispatched2: BatchJobPayload[] = [];
+      await dispatchPendingOutbox(10, async (payload) => {
+        dispatched2.push(payload);
+      });
+      const after = await db.select().from(eventOutbox);
+      expect(after[0]!.status).toBe('sent');
+      expect(dispatched2.length).toBe(1);
+    } finally {
+      if (prev === undefined) delete process.env.QUEUE_DRIVER;
+      else process.env.QUEUE_DRIVER = prev;
+    }
   });
 
   it('worker processes a batch with partial failure and is idempotent on replay', async () => {

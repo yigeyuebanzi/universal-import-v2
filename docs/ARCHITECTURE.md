@@ -92,6 +92,7 @@ pending -> processing -> completed
 ## 7. 容灾与恢复
 
 - **Outbox 失败重投**：投递失败写入 `retry_count + next_retry_at`，指数退避；
+- **Serverless 拉取模式**：`QUEUE_DRIVER=db` 时，`/api/cron/process`（或上传后的 `after()` 踢单）直接抢占 pending/retry 批次并复用同一套 `processBatchJob` 状态机，Vercel 无需常驻 Worker；
 - **卡死恢复**：Sweeper 将 `processing` 且 `locked_at` 超时的批次恢复为 `retry`，并重新创建 Outbox 事件；
 - **丢失事件重建**：Sweeper 扫描 `pending` 任务，若批次存在但 Outbox 事件缺失则重建；
 - **SKU 校验降级**：查询超过 `SKU_CHECK_TIMEOUT_MS`（默认 3s）或连接异常时，任务标记 `degraded`，跳过 SKU 主数据校验，仅做本地格式校验，并在前端明示风险。

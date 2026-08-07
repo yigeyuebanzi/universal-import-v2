@@ -18,11 +18,27 @@ export interface BatchJobPayload {
 }
 
 export function redisConnectionOptions(): RedisOptions {
+  const fromUrl =
+    process.env.REDIS_URL && !process.env.REDIS_HOST
+      ? (() => {
+          try {
+            const u = new URL(process.env.REDIS_URL!);
+            return {
+              host: u.hostname,
+              port: Number(u.port || 6379),
+              password: u.password ? decodeURIComponent(u.password) : undefined,
+              tls: u.protocol === 'rediss:' ? {} : undefined,
+            };
+          } catch {
+            return {};
+          }
+        })()
+      : {};
   return {
-    host: process.env.REDIS_HOST ?? 'localhost',
-    port: Number(process.env.REDIS_PORT ?? 6379),
-    password: process.env.REDIS_PASSWORD || undefined,
-    tls: process.env.REDIS_TLS === 'true' ? {} : undefined,
+    host: fromUrl.host ?? process.env.REDIS_HOST ?? 'localhost',
+    port: fromUrl.port ?? Number(process.env.REDIS_PORT ?? 6379),
+    password: fromUrl.password ?? (process.env.REDIS_PASSWORD || undefined),
+    tls: fromUrl.tls ?? (process.env.REDIS_TLS === 'true' ? {} : undefined),
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
   };

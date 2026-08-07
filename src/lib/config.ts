@@ -15,6 +15,10 @@ export function strEnv(name: string, fallback = ''): string {
   return process.env[name] ?? fallback;
 }
 
+export function getQueueDriver(): 'redis' | 'db' {
+  return process.env.QUEUE_DRIVER === 'db' ? 'db' : 'redis';
+}
+
 export const config = {
   batchSize: intEnv('BATCH_SIZE', 1000),
   workerConcurrency: intEnv('WORKER_CONCURRENCY', 4),
